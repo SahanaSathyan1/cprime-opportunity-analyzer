@@ -87,7 +87,7 @@ app.post("/analyze-transcript", upload.single("file"), async (req: Request, res:
     const session = await prisma.session.create({
       data: {
         fileName: fileName,
-        result: outputText,
+        
       },
     });
     // ✅ Return response
