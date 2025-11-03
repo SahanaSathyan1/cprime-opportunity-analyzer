@@ -8,6 +8,8 @@ import { PrismaClient } from "./generated/prisma/client.js";
 import { PDFParse } from 'pdf-parse';
 import mammoth from "mammoth";
 import { SYSTEM_PROMPT } from "./systemprompt.js";
+import { chatPrompt } from "./chatprompts.js";
+import { knowledge } from "./knowledge.js";
 
 dotenv.config();
 const app = express();
@@ -68,7 +70,7 @@ app.post("/analyze-transcript", upload.single("file"), async (req: Request, res:
       transcript = result.value;
       console.log(transcript);
     } else {
-      return res.status(400).json({ error: "Unsupported file type. Upload a PDF or DOCX." });
+      return res.status(415).json({ error: "Unsupported file type. Upload a PDF or DOCX." });
     }
 
     // Insert transcript into system prompt
@@ -76,40 +78,43 @@ app.post("/analyze-transcript", upload.single("file"), async (req: Request, res:
       {"role":"user","content":transcript}
     ];
     
-
+    const session = await prisma.session.create({
+      data: {
+        fileName: fileName, 
+      },
+    });
     // 🔮 Call OpenAI
     const response = await openai.responses.create({
       model: "gpt-5",
       input: finalPrompt as any,
     });
 
-    const outputText = response.output_text
-    const session = await prisma.session.create({
-      data: {
-        fileName: fileName, 
-      },
-    });
-    const chatMessage = await prisma.chatMessage.createMany({
-      data:[
-        {sessionId: session.id, role: "system",content :SYSTEM_PROMPT},
-        {sessionId: session.id, role: "user",content :transcript},
-        {sessionId: session.id, role: "assistant",content : outputText},
-
-      ]
-    })
+    const outputText = response.output_text;
+    
+    
     // ✅ Return response
-    res.json({
+    res.status(201).json({
       message: "summarised successfully",
       session_id: session.id,
       output : outputText
     }
       );
+    await prisma.chatMessage.createMany({
+      data:[
+        {sessionId: session.id, role: "system",content : chatPrompt},
+        {sessionId: session.id, role: "user",content :`here is the trancript : ${transcript}`},
+        {sessionId: session.id, role: "user",content : `here is the analysis : ${outputText}`},
+        {sessionId: session.id, role: "user",content : `here is the organization's knoweledge : ${knowledge}`},
+        
+
+      ]
+    }).catch(err => console.error('DB write failed:', err));
   } catch (error) {
     console.error("Error:", error);
     res.status(500).json({ error: "Failed to analyze transcript" });
   } finally {
     try {
-    await unlink(filePath);
+    await unlink(filePath).catch(() => {});;
     console.log(`🧹 Deleted uploaded file: ${filePath}`);
   } catch (cleanupErr) {
     console.error("Failed to delete uploaded file:", cleanupErr);
@@ -142,6 +147,11 @@ app.post("/chat",async(req: Request<{}, ChatResponse, ChatRequest>,res:Response)
     })
     
     const assistant_message = response.output_text
+
+    res.status(200).json(
+      { message :assistant_message }
+    )
+
     await prisma.chatMessage.createMany({
       data : [{
         sessionId:session_id,
@@ -152,11 +162,7 @@ app.post("/chat",async(req: Request<{}, ChatResponse, ChatRequest>,res:Response)
         role : "assistant",
         content: assistant_message
       }]
-    })
-
-    res.json(
-      { message :assistant_message }
-    )
+    }).catch(err => console.error('DB write failed:', err));
 
 })
 
