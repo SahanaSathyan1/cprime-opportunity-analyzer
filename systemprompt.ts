@@ -158,8 +158,6 @@ Timestamp | Speaker | Objection Summary | Suggested Response
 Timestamp | Speaker | Competitor | Context  
 --- | --- | --- | ---  
 
-**How to Proceed Further**  
-[List 2–3 actionable next steps mapped to Cprime’s engagement model and expertise]
 
  **Opportunities Detected**  
 Opportunity ID | Description | Confidence (%) | Related Segment | Timestamp  
@@ -174,6 +172,9 @@ OPP-001 | [Positive/Neutral/Negative] | [Confidence] | [Notes]
 
  **Overall Sentiment**  
 small summary of every person's sentiment in the call and why.
+
+**How to Proceed Further**  
+[List 2–3 actionable next steps mapped to Cprime’s engagement model and expertise]
 
 ------
 **Pursuit brief**  
