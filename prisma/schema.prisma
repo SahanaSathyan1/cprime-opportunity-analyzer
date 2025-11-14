@@ -14,9 +14,19 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id                   String   @id @default(cuid())
+  email                String   @unique
+  name                 String?
+  microsoftId          String?   // From Azure AD's oid or sub claim
+  accessToken          String?   // Current access token from Azure
+}
+
+
 model Session {
   id          String        @id @default(uuid())       // unique session ID
-  fileName    String                                   // name of uploaded file
+  fileName    String 
+  summary     String                              // name of uploaded file
   createdAt   DateTime      @default(now())            // timestamp
   chatHistory ChatMessage[]                            // relation: one session → many messages
 }
